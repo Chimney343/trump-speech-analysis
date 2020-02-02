@@ -14,19 +14,22 @@ A .json file containing speech id, url and speech text.
 
 # PARAMETERS
 URL = 'https://factba.se/transcripts/speeches'
-N_SCRAPES = 5
+N_SCRAPES = 2000
 RESULT = 'trump_speeches'
 
+# DO NOT EDIT BELOW THIS POINT
 # IMPORTS
 import time
+import datetime
 import json
 import requests
 import traceback
 from selenium import webdriver
 from bs4 import BeautifulSoup
 
+
 def scrape_speech(url):
-    keys = ['url', 'title', 'speech']
+    keys = ['url', 'title', 'date', 'speech']
     speech_data = dict.fromkeys(keys)
     speech_data['url'] = url
     try:
@@ -38,6 +41,10 @@ def scrape_speech(url):
         title = soup.find(attrs={"name": "description"})['content']
         speech_data['title'] = title
         print('{}\n'.format(title))
+#       Get date.
+        raw_date = speech_data['title'].split('-')[-1].strip()
+        date = datetime.datetime.strptime(raw_date, '%B %d, %Y')
+        speech_data['date'] = date
         # Get speech text.
         results = soup.find('script', {'type': 'application/ld+json'})
         content = json.loads(results.contents[0], strict=False)
@@ -55,9 +62,8 @@ def main():
     driver = webdriver.Firefox()
     driver.get(URL)
     # Create containers and counters.
-    speeches =  []
+    speeches = []
     scrape_count = 0
-
     print("Commencing scraping.")
     while scrape_count <= N_SCRAPES:
         try:
@@ -70,7 +76,6 @@ def main():
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(5)
         scrape_count += 1
-
     print("Finished. Saving to .json.")
     with open('{}_{}.json'.format(RESULT, time.asctime().replace(':', '-').replace(' ', '_')), 'w') as fout:
         json.dump(speeches, fout)
@@ -78,31 +83,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
